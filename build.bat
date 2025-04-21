@@ -1,60 +1,71 @@
 @echo off
-setlocal enabledelayedexpansion
+echo [32mWelcome to the Greentea OS! Support us at https://www.patreon.com/PeyTy and https://greenteaos.github.io/donate/
+echo [0m
 
-echo.
-echo [32m[Welcome][0m to Greentea OS Builder!
-echo.
+:: cd /d "C:\Program Files\Oracle\VirtualBox"
+:: VBoxManage controlvm "Tofita" poweroff
+:: Keep VM active and booted up for this to work:
+:: VBoxManage storageattach "Tofita" --storagectl SATA --port 1 --device 0 --forceunmount --type dvddrive --medium emptydrive
 
 cd /d %~dp0
 
-:: --- Pre-checks ---
-if not exist Greentea (
-    echo [31m[Error][0m Missing "Greentea" folder. Please clone the repo or download it.
-    goto somethingbad
-)
+:: TODO if not exists Greentea You seems not downloaded repo... Can be downloaded at url
+:: TODO if not exists Teapot You seems not downloaded repo...
+:: TODO hexa--is-present , if err code get hexa at url
 
-if not exist Teapot (
-    echo [31m[Error][0m Missing "Teapot" folder. Please clone the repo or download it.
-    goto somethingbad
-)
+:: Balanced
+:: Use this to get the list of GUIDs: powercfg /list
+:: powercfg /setactive 381b4222-f694-41f0-9685-ff5bb260df2e
 
-if not exist hexa.exe (
-    echo [31m[Error][0m Missing "hexa.exe". Please download it from the official site.
-    goto somethingbad
-)
-
-:: --- Build ---
-echo [33m[Stage][0m Building HEXA configuration...
+:: Build the builder itself
 cmd /c hexa build\hexa.json
-IF %ERRORLEVEL% NEQ 0 goto somethingbad
-
-echo [33m[Stage][0m Building GreenTea OS via Node...
-..\Teapot\node-v18.1.0-win-x64\node build.js init-or-clean asm efi dll engine ramdisk iso
-IF %ERRORLEVEL% NEQ 0 goto somethingbad
-
-:: --- Copy ISO Output ---
-echo [33m[Stage][0m Moving final ISO to build/output...
-mkdir build\output 2>nul
-if exist greenteaos-uefi64.iso (
-    move /Y greenteaos-uefi64.iso build\output\greenteaos-uefi64.iso >nul
-    copy /Y build\output\greenteaos-uefi64.iso C:\Tea\greenteaos-uefi64.iso >nul 2>nul
-    echo [32m[Success][0m ISO built and moved to build/output and C:\Tea
-) else (
-    echo [31m[Error][0m ISO file not found after build!
-    goto somethingbad
+IF %ERRORLEVEL% NEQ 0 (
+  goto somethingbad
 )
 
-:: Optional: Start VM or extra tools
-:: VBoxManage storageattach etc...
+:: TODO ! hexa --deps(name+date)path.txt to print for deps while compile, so
+:: we can compare dates for cashes and rebuild only required projects
+
+:: Build main ISO
+Teapot\node-v18.1.0-win-x64\node build.js init-or-clean asm efi dll engine ramdisk iso
+IF %ERRORLEVEL% NEQ 0 (
+  goto somethingbad
+)
+
+:: Move ISO to proper output path
+if exist greenteaos-uefi64.iso (
+  if not exist build\output mkdir build\output
+  move /Y greenteaos-uefi64.iso build\output\greenteaos-uefi64.iso >nul
+  copy /Y build\output\greenteaos-uefi64.iso C:\Tea\greenteaos-uefi64.iso >nul 2>nul
+)
+
+echo [36m[Success][0m
+ATTRIB +S .
+
+:: Start VMs or tools
 :: tools\qemu-vfat.bat
+:: cd /d "C:\Program Files\Oracle\VirtualBox"
+:: VBoxManage startvm "Tofita"
+:: VBoxManage storageattach "Tofita" --storagectl SATA --port 1 --device 0 --type dvddrive --medium "C:\Tea\greenteaos-uefi64.iso"
+:: VBoxManage controlvm "Tofita" reset
+
+:: Eco
+:: powercfg /setactive 4353c124-51fe-4f9b-b6b2-0d3f94691a20
+
+:: node build.js vbox
+:: node tools\vbox.js
+:: node tools\listen.js
+:: node tools\pipe.js
 
 goto done
 
 :somethingbad
 echo [37m[41m[Exiting on error][0m
-exit /b 1
+
+:: Eco
+:: powercfg /setactive 4353c124-51fe-4f9b-b6b2-0d3f94691a20
 
 :done
+:: Clear error code
 set errorlevel=0
-echo [32m[Build Complete][0m
 exit /b 0
