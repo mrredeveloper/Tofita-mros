@@ -3,7 +3,6 @@ setlocal enabledelayedexpansion
 
 echo.
 echo [32m[Welcome][0m to Greentea OS Builder!
-echo Support us: https://www.patreon.com/PeyTy | https://greenteaos.github.io/donate/
 echo.
 
 cd /d %~dp0
